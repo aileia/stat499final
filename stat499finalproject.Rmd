@@ -1,0 +1,677 @@
+---
+title: "<center> **STAT499 - Final Project** </center>"
+author: "<center>Kubilay Kırmızı, Nurşen Töre, Aisuluu Baktybekova</center>"
+date: "<center>**14/06/2020**</center>"
+output: pdf_document
+bibliography: bibliography.bib
+csl: apa-6th-edition.csl
+biblio-style: "apa"
+
+
+---
+
+\centering
+
+# Energy Analysis Report of Metropolitan Municipality of Istanbul 
+\raggedright
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+``` 
+
+
+![](metu.jpg)
+
+
+
+
+\newpage
+\tableofcontents
+\newpage
+Libraries that we have used are indicated below:
+
+```{r include=TRUE,warning=FALSE,message=FALSE,results='hide'}
+library(tidyverse)
+library(tinytex)
+library(magrittr)
+library(lubridate)
+library(leaflet)
+library(plotly)
+library(readxl)
+library(modelr)
+library(sqldf)
+
+```
+# Introduction
+
+In this report, we have analyzed different data sets shared by the Metropolitan Municipality of Istanbul(İBB) and obtained a general analysis about Istanbul in the light of these data. We prepared different statistical representations with different data and blended them with our own comments.  
+
+
+# Description of Data
+Solar energy is an essential source of ecological energy. There are many solar powerplants all around the Turkey. In this report we have examined the dataset of Ikitelli Solar Power Electricty Plant and it's power production capacities. It is mostly related with energy and environment aspect of Istanbul. 
+
+The Graph includes 15-minute data per day of 1200 kWp solar power plant located in the Istanbul Water and Sewerage Administration (ISKI) Ikitelli Drinking Water Treatment Plant. Publisher of the data is Istanbul Energy Inc. The data collection interval is between June 2018 and May 2019. It doesn't include geographical information. Data is collected, edited and listed monthly but since the publisher didn't share each month, there are some missing months along collection interval. All the data used to create graphs are based on real-time data. Unit of electricity generated is kWh/min (y-axis). 
+
+Access to data is provided by Metropolitan Municipality of Istanbul(IBB). You can reach the data from following link: data.ibb.gov.tr/dataset/ikitelli-gunes-enerjisi-santrali-elektrik-uretim-miktarlari
+
+# Literature Review
+
+# Descriptive Statistics, Data visualizations, Statistical Analysis, Modeling
+
+## Natural Gas
+
+Natural gas is an essential component in the energy expenditure of Turkey. It is mostly imported from countries like Russia, İran, and Azerbaijan. Then its distribution is done by private companies. In İstanbul, the private company responsible for natural gas distribution is IGDAŞ. It requires infrastructure investments; its delivery is done by underground pipelines. 
+
+Consumption of Natural gas in İstanbul fluctuates according to seasons. Most of the heating is done with Natural Gas; in the cold winter months, its consumption peaks. When the winter is more chill, natural gas consumption changes according to years. Also, the population of İstanbul is increasing, which contributes to an increase in general consumption patterns.
+```{r doalgaz,echo=F,warning=FALSE,message=FALSE}
+doalgaztuk <- read_excel('doalgaztuk.xlsx')
+  f1 <- list(size = 8)
+  doalgaztuk%>%
+  gather(key = years, value = consumption,-ilce)%>%
+  plot_ly(
+    x = ~reorder(ilce,consumption), 
+    y = ~consumption,  
+    color = ~years, 
+    hoverinfo = "text",
+    type = 'scatter', mode = 'lines'
+  )%>%
+  layout(
+    title = "Natural Gas Consumption",
+    xaxis = list(title = "Provinces",
+                 tickfont = f1),legend=list(title=list(text='<b> Years </b>'))
+  ) 
+```
+
+ We make a graph of consumption of different provinces according to years in order to locate which provinces require more investment in underground pipelines. In our data, we see that Kadıköy’s consumption increases much more than other provinces. This is partly explained by the urban transformation projects that take place in Kadıköy. In these projects, lots of new residential buildings are constructed, unlike old buildings, in these buildings, the heating,  water heating,  cooking is all done with natural gas. This might explain the spike in natural consumption in Istanbul. It also means they require more investment in infrastructure for natural gas in Kadıköy.
+
+Our graph also enlights that 2017 the natural gas consumption in every providence increased. When we try to explain this phenomenon, we look at the winter mean temperatures according to years. As it is seen in our graphs, in 2017, the temperatures are lower than the other years, which can explain the increase.
+
+
+```{r wintermeantemps,echo=F,warning=FALSE,message=FALSE}
+ aksaraymet <- read_excel('otomatik-meteorolojik-gozlem-istasyon-verileri-akom (1).xlsx',3)
+ aksaraymet$Ort_Hava_S<-as.double(aksaraymet$Ort_Hava_S)
+ 
+translatemonth<- data.frame("Ay" = c("Ocak","Şubat","Mart","Nisan","Mayıs",
+                                     "Haziran","Temmuz","Ağustos","Eylül",
+                                     "Ekim","Kasım","Aralık"), 
+                            "Month" = c("January","February","March","April",
+                                        "May","June","July","August","September",
+                                        "October","November","December"),
+                            "Mevsim"=c("Kış","Kış","İlkbahar","İlkbahar","İlkbahar","Yaz","Yaz","Yaz","Sonbahar","Sonbahar","Sonbahar","Kış"))
+
+aksaraymet %>% left_join(translatemonth)%>%
+  filter(Mevsim=="Kış")%>%
+  group_by(yil)%>%
+  summarize(MeanTemperatures=mean(Ort_Hava_S,na.rm=TRUE))%>%
+  plot_ly(
+    x = ~yil,
+    y = ~MeanTemperatures,  
+    hoverinfo = "text",
+    type = 'scatter', mode = 'lines'
+  )%>%
+  layout(
+    title = "Winter Mean Temperatures",
+    xaxis = list(title = "Years",
+                 tickfont = f1)
+  )
+```
+This animation shows the change of pouplation vs natural gas consumption by province during 5 years.
+
+```{r echo=F,warning=FALSE,message=FALSE}
+data1 <- read_csv("data1.csv")
+visualization <- data1 %>%
+  plot_ly(
+    x = ~ population, 
+    y = ~consumption, 
+    size = ~population,
+    color = ~province, 
+    frame = ~year, 
+    text = ~province, 
+    hoverinfo = "text",
+    type = 'scatter',
+    mode = 'markers'
+  ) %>%
+  layout(
+    xaxis = list(
+      type = "log"
+    ),
+    title = "Natural gas consumption vs population by province"
+  )
+visualization
+
+```
+
+
+
+### Simple linear regression between population and natural gas consumption (m3)(Model 1)
+
+```{r echo=F,warning=FALSE,message=FALSE}
+
+ggplot(data1, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
+  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by regions")
+
+```
+
+### Simple linear regression between population and natural gas consumption (m3) without outlier(MOdel 2)
+
+```{r echo=F,warning=FALSE,message=FALSE}
+data1 <- read_csv("data1.csv")
+
+data2 <- sqldf("select * from data1 where province != 'KADIKÖY'")
+ggplot(data2, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
+  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by regions")
+
+```
+
+### Summary table of both regression models and their correlation
+
+
+
+|       | $\beta^0$     |$\beta^1$      |    correlation  |
+|-------|---------------|:-------------:|----------------:|
+|Model 1|   38484980.5  |    298.5      |    0.7727       |
+|Model 2| 37462148.2    | 288.6         |   0.8369        |
+
+
+
+The linear model for data without an outlier is estimated as ŷ =  37462148.2 + 288.6x. This implies that on average, for every 1 person increase in population, natural gas consumption is estimated to increase by 288.6 m³ /year. Regression coefficients for data with outlier gives higher results. This is because in Kadikoy there are more consumption of natural gas than average. Correlation coefficient of data with oulier was less (0.77) than without (0.84). This change means that correlation of population and natural gas consumption from data with outlier is weaker or more spreaded than other. Thus, there are effects of outlier to the model and simple regression model without outlier gives more reliable estimations on natural gas consumption among regions in Istanbul. 
+
+
+## Wind Energy
+The wind is another energy resource that is used in electricity production. According to the Yeşil Ekonomi website by @YesilEkon, in 2019, 7.42% of all Turkey’s electricity production is supplied by wind energy. Wind energy stations and tribunes are constructed by private firms. Most of the firms are international companies that have local factories. The investments are made by various firms. The table below gives the list of the wind energy stations that are located in İstanbul, which is taken from the Enerji atlası website by @EnerAtl.
+
+
+
+$$
+\begin{tabular}{l|l|l|l}
+\hline
+Station & Location & Company & Power\\
+\hline
+Çatalca Rüzgar Santrali & İstanbul, Çatalca & Sanko Enerji & 93 MW\\
+\hline
+Silivri Rüzgar Santrali & İstanbul, Üsküdar & Eksim Enerji & 45 MW\\
+\hline
+Çanta Rüzgar Santrali & İstanbul, Silivri & Boydak Enerji & 43 MW\\
+\hline
+Kemerburgaz RES & İstanbul, Gaziosmanpaşa & Alto Holding & 24 MW\\
+\hline
+Çataltepe RES & İstanbul, Çatalca & Süper Elektrik Üretim & 10 MW\\
+\hline
+Tepe Rüzgar Santrali & İstanbul, Silivri & Teperes Elektrik & 5,85 MW\\
+\hline
+Gazi RES & İstanbul, Silivri & Arı En Elektrik Üretim & 5,00 MW\\
+\hline
+Sakarbayır RES & İstanbul, Silivri & Arı En Elektrik Üretim & 3,00 MW\\
+\hline
+Sunjüt Rüzgar Santrali & İstanbul, Çatalca & Sunjüt Enerji & 1,20 MW\\
+\hline
+Boğaziçi Üni. Sarıtepe Kamp. Rüzgar Santrali & İstanbul, Sarıyer & Boğaziçi Üniversitesi & 0,90 MW\\
+\hline
+Ayyıldız Enerji RES & İstanbul, Büyükçekmece & Ayyıldız Enerji & 0,50 MW\\
+\hline
+\end{tabular}
+$$
+In order to locate the most viable locations for wind energy tribunes, we look at the wind speed map of İstanbul. The map is created with the Leaflet package with met000.xls data. In the map below, we see that certain locations have higher wind speeds, especially the regions Çatalca, Silivri, and Adalar has higher wind speeds. As we have observed in the locations of the wind stations, these stations are mostly located in Çatalca and Silivri. Probably because of the estate prices in Adalar, they don’t have wind stations there.
+![Map of max windspeed in march 2019](mapwindspeed.png)
+
+```{r echo=F,warning=FALSE,message=FALSE}
+met000 <- read_csv('met000.csv')
+met000%>%
+  group_by(OBSERVING_DATE)%>%
+  summarize(n_obs = n(),
+            avetemp = mean(TEMPERATURE),
+            ave_humidity = mean(HUMIDITY))%>%
+  ggplot(aes(x = OBSERVING_DATE, y = ave_humidity )) + 
+  geom_point() + geom_line()+geom_smooth()+
+  labs(title="Average Humidity in İstanbul",caption="Average Humidity in İstanbul during March 2019")+xlab("Date")+ylab("% humidity")
+
+``` 
+
+## Solar Energy
+
+
+
+```{r codes, include=FALSE, warning=FALSE}
+
+ff1221 <- read_excel("mayis19.xlsx")
+names(ff1221) <- c("date","kwh")
+
+
+mayis <- ggplot(ff1221, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+mayis <- mayis + ggtitle("2019 Mayıs Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+mayis <- mayis +
+      theme(
+             axis.text.x = element_text(color = "black",size=11),
+             axis.text.y = element_text(color = "black",size=11),
+             panel.background = element_rect(fill = "white"),
+             panel.grid.major.x = element_line(),
+             panel.grid.major.y = element_line(),
+             panel.grid.minor.x = element_line(),
+             panel.grid.minor.y = element_line(),
+             axis.line = element_line(color = "black", size = 2),
+             plot.title = element_text(size = 14, face = "bold"),
+             axis.title.x.bottom = element_text(colour = "black",size = 14),
+             axis.title.y.left = element_text(color = "black", size ="14"),
+            
+            )
+
+   
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1222 <- read_excel("nisan19.xlsx")
+names(ff1222) <- c("date","kwh")
+
+
+nisan <- ggplot(ff1222, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+nisan <- nisan + ggtitle("2019 Nisan Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+nisan <- nisan +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+ 
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+ff1223 <- read_excel("mart19.xlsx")
+names(ff1223) <- c("date","kwh")
+
+mart <- ggplot(ff1223, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+mart <- mart + ggtitle("2019 Mart Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+mart <- mart +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1224 <- read_excel("subat19.xlsx")
+names(ff1224) <- c("date","kwh")
+
+
+subat <- ggplot(ff1224, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+subat <- subat + ggtitle("2019 Şubat Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+subat <- subat +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+  
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1225 <- read_excel("aralik18.xlsx")
+names(ff1225) <- c("date","kwh")
+
+
+aralik <- ggplot(ff1225, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+aralik <- aralik + ggtitle("2018 Aralık Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+aralik <- aralik +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1226 <- read_excel("kasim18.xlsx")
+names(ff1226) <- c("date","kwh")
+
+
+kasim <- ggplot(ff1226, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+kasim <- kasim + ggtitle("2018 Kasım Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+kasim <- kasim +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1227 <- read_excel("eylul18.xlsx")
+names(ff1227) <- c("date","kwh")
+
+
+eylul <- ggplot(ff1227, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+eylul <- eylul + ggtitle("2018 Eylül Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+eylul <- eylul +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1228 <- read_excel("agustos18.xlsx")
+names(ff1228) <- c("date","kwh")
+
+
+agustos <- ggplot(ff1228, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+agustos <- agustos + ggtitle("2018 Ağustos Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+agustos <- agustos +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+ 
+
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+
+ff1229 <- read_excel("haziran18.xlsx")
+names(ff1229) <- c("date","kwh")
+
+
+haziran <- ggplot(ff1229, aes(x = date, y = kwh, color = kwh)) + geom_line() + geom_col() + scale_color_gradient2()
+haziran <- haziran + ggtitle("2018 Haziran Ayı Anlık Enerji Üretimi") + xlab("Tarih") + ylab("Üretilen Enerji(kwh/dk)")
+
+#tema degisikligi kismi
+theme_set(theme_minimal())
+haziran <- haziran +
+  theme(
+    axis.text.x = element_text(color = "black",size=11),
+    axis.text.y = element_text(color = "black",size=11),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(),
+    panel.grid.major.y = element_line(),
+    panel.grid.minor.x = element_line(),
+    panel.grid.minor.y = element_line(),
+    axis.line = element_line(color = "black", size = 2),
+    plot.title = element_text(lineheight = 14, face = "bold"),
+    axis.title.x.bottom = element_text(colour = "black",size = 14),
+    axis.title.y.left = element_text(color = "black", size ="14"),
+    
+  )
+
+ 
+
+# ---------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+
+```
+
+
+The main question for Solar Energy and its production performance is whether there is a relation with seasons, weather and production capacity, and what may affect the production of solar power. As we can see from the graphics, there has always been a fluctuation in the electricity generation during months. So, our aim is to check those changes with the help of statistical tools and data visualization.
+
+
+In order to facilitate the analysis process, we will consider this 9-month dataset three-by-three.
+
+
+At the below, there will be some graphs showing energy production in the Ikitelli Solar Powerplant along with March 2019, April 2019 and May 2019. Y-axis shows the amount of energy produced and x-axis shows the date during the month. Each purple spike in the graphics represents days during months. From the legend placed at the right of every graph, you can see the color gradient and its meaning. As the color of purple becomes darker, it means higher electricity generated, and as it becomes closer to the white, it means less productive at that moment. There are some gaps between spikes. This is because, in the early morning, evening and night time is not possible to generate any electricity in solar powerplant.
+
+
+```{r codesa21, include=TRUE,echo=FALSE, warning=FALSE, fig.height=13, fig.width=15, fig.align="center", fig.cap= "Ikitelli Solar Power Plant Electricty  Generation Data (March, April and May 2019)"  }
+
+library(gridExtra)
+
+grid.arrange(mart, nisan, mayis, nrow= 3, ncol = 1 )
+
+
+```
+
+When we check the graphs, we can see that in the March 2019 around on 13-14-15 March there are some problems with electricity generation. The reason might be bad weather. When we check the meteorology data, it says on that day, Istanbul is very cloudy with heavy rain in the morning and afternoon. @hava1
+
+Also, when we look at the descriptive statistics of the three months period, we can clearly see an increase in the mean of the production below. The mid-value of the month, in other words, the median, is also increasing from March to May. So, we can say that as the temperatures go up by seasonal change, the production capacity of solar power plants grows.
+
+---
+output:
+  bookdown::word_document2: default
+---
+ 
+Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar Powerplant in March, April and May 2019 
+
+
+
+|       | $Mean$     |$Median$      |    Max Generation(kWh/min)  |
+|-------|---------------|:-------------:|----------------:|
+|March 2019|   66.45  |    28.00      |    265.00       |
+|April 2019| 78.15    | 46.00         |   272.00        |
+|May 2019| 82.80    | 59.00         |   263.00        |
+
+
+
+
+```{r codesa22, include=FALSE,echo=FALSE, warning=FALSE, }
+# MARCH 2019 descriptive data
+summary(ff1223$kwh)
+```
+
+```{r codesa23, include=FALSE,echo=FALSE, warning=FALSE, }
+# APRIL 2019 descriptive data
+summary(ff1222$kwh)
+```
+
+```{r codesa24, include=FALSE,echo=FALSE, warning=FALSE, }
+# MAY 2019 descriptive data
+summary(ff1221$kwh)
+```
+
+
+
+
+***
+
+
+```{r codesa25, include=TRUE, echo=FALSE, warning=FALSE, fig.height=13, fig.width=15, fig.align="center", fig.cap= "Ikitelli Solar Power Plant Electricty  Generation Data (November 2018, December 2018 and February 2019)" }
+
+library(gridExtra)
+
+grid.arrange(kasim, aralik, subat, nrow= 3, ncol = 1 )
+
+
+```
+
+
+In the next 3-pack of graphs, we have November 2018, December 2018 and February 2019 dated data. Different than our previous set, we see way more less intensity of electricity generation. To prove that comparison, firstly, we check descriptive statistical elements of those 3-month data. As we can see below, median values are so close to zero, or even zero. The reason is most of the data is close to minimum values. If we check the December 2019 data, we can see only two values higher than 175 (kWh/min). That was almost every day higher than this value on summer/spring dataset. Moreover, when we check the mean values of these three months, there are dramatic differences compared to March, April, and May. So, we can say that effect of season and temperature is obvious on generation.
+
+
+---
+output:
+  bookdown::word_document2: default
+---
+ 
+Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar Powerplant in  November 2018, December 2018 and February 2019
+
+|       | $Mean$     |$Median$      |    Max Generation(kWh/min)  |
+|-------|---------------|:-------------:|----------------:|
+|November 2018|   24.31  |    1.00      |    205.00       |
+|December 2018| 13.41    | 0.00         |   253.00        |
+|February 2019| 31.95    | 1.00         |   207.00        |
+
+
+
+
+```{r codesa26, include=FALSE,echo=FALSE, warning=FALSE, }
+# FEBRUARY 2019 descriptive data
+summary(ff1224$kwh)
+```
+
+```{r codesa27, include=FALSE,echo=FALSE, warning=FALSE, }
+# DECEMBER 2018 descriptive data
+summary(ff1225$kwh)
+```
+
+```{r codesa28, include=FALSE,echo=FALSE, warning=FALSE, }
+# NOVEMBER 2018 descriptive data
+summary(ff1226$kwh)
+```
+
+
+
+```{r codesa29, include=TRUE, echo=FALSE, warning=FALSE, fig.height=13, fig.width=15, fig.align="center", fig.cap= "Ikitelli Solar Power Plant Electricty  Generation Data (June, August and September 2018)" }
+
+library(gridExtra)
+
+grid.arrange(haziran, agustos, eylul, nrow= 3, ncol = 1 )
+
+
+```
+
+To confirm and double-check the effect of weather and season, let's have a look at to last three month data set. It includes June 2018, August 2018 and September 2018 data. Because it is not winter or fall season, we see a continuous energy generation on the graphs except the end of September 2018. That confirms that season has a prominent effect on the generation. On the June 2018 data, we see similar electricity generation data with first three graph sets (2019 March, April and May). Even we have a higher mean of production (92.68 kWh/min) than those three months. That was an expected result, so we know that sunny times have a positive effect on solar energy generation. But when we come to August, it looks like there is a problem. Even though the consistency of data continues in August, we should have a higher mean, in other words more electricty generation. 
+
+We understood it is also something expected after a quick research about solar panels. The effect of temperature is different than the season; the less is better. But less temperature means less sun (less solar radiation), so there should be a balance. According to research, at 25°C, the performance of solar panels decreases around $%10-25$ @solarpanel. When we checked the air temperature in August 2018, it shows almost every day around 25°C @hava . This explains the situation. Lastly, sometimes there exist outlier data in a dataset; for instance, we can see it on the graphical model in August 2018, or we can check the max generation value of it.
+
+
+---
+output:
+  bookdown::word_document2: default
+---
+ 
+Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar Powerplant in  June, August and September 2018
+
+|                 | $Mean$   |$Median$       | Max Generation(kWh/min)     |
+|-----------------|----------|:-------------:|----------------------------:|
+|   June 2018     |   92.68  |    80.00      |    260.00                   |
+|   August 2018   | 67.93    | 57.00         |   284.00                    |
+|   September 2018| 56.73    | 25.00         |   274.00                    |
+
+
+
+
+## Conclusion
+As a result, we observed different graphics of different months and their solar electricity generation data above. We have checked the effect of weather, season, and temperature. We saw that any weather (cloudy, rainy, snowy etc.) except sunny affects adversely and decreases electricity generation's performance. Also, we learned high temperature is also something unwanted for solar panels. It reduces performance, as well. The season is relatively affecting the production. Because, generally in Istanbul, springs and summers are sunny and not so hot, but winters and falls are rainy/snowy and cloudy mostly. Since those are the main factors affecting solar electricity generation, the season is of great importance.
+
+```{r codesa30, include=FALSE,echo=FALSE, warning=FALSE, }
+# JUNE 2018 descriptive data
+summary(ff1229$kwh)
+```
+
+```{r codesa31, include=FALSE,echo=FALSE, warning=FALSE, }
+# AUGUST 2018 descriptive data
+summary(ff1228$kwh)
+```
+
+```{r codesa32, include=FALSE,echo=FALSE, warning=FALSE, }
+# SEPTEMBER 2019 descriptive data
+summary(ff1227$kwh)
+```
+
+***
+
+# Bibliography
+
+```{r refmgr references, results="asis", echo=FALSE}
+# PrintBibliography(bibliography) 
+```
