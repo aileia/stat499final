@@ -2,12 +2,12 @@
 title: "<center> **STAT499 - Final Project** </center>"
 author: "<center>Kubilay Kırmızı, Nurşen Töre, Aisuluu Baktybekova</center>"
 date: "<center>**14/06/2020**</center>"
-output: pdf_document
+output:
+  pdf_document: default
 bibliography: bibliography.bib
+fig_caption: yes
 csl: apa-6th-edition.csl
-biblio-style: "apa"
-
-
+biblio-style: apa
 ---
 
 \centering
@@ -28,9 +28,9 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 \newpage
 \tableofcontents
 \newpage
-Libraries that we have used are indicated below:
 
-```{r include=TRUE,warning=FALSE,message=FALSE,results='hide'}
+
+```{r include=FALSE,warning=FALSE,message=FALSE,results='hide'}
 library(tidyverse)
 library(tinytex)
 library(magrittr)
@@ -40,21 +40,35 @@ library(plotly)
 library(readxl)
 library(modelr)
 library(sqldf)
+library(dplyr)
+library(ggplot2)
+library(car)
 
 ```
 # Introduction
 
-In this report, we have analyzed different data sets shared by the Metropolitan Municipality of Istanbul(İBB) and obtained a general analysis about Istanbul in the light of these data. We prepared different statistical representations with different data and blended them with our own comments.  
+ In this report, analysis of different energy data sets shared by the Metropolitan Municipality of Istanbul(İBB) was performed and obtained a general overview of Istanbul in the light of these datasets. We prepared different statistical representations and analyses with the energy data and blended them with our comments. Firstly, natural gas consumption based on different districts from 2015 to 2019 was investigated. Descriptive statics of natural gas consumption was examined together with some analysis such as ANOVA and Simple linear regression. The purpose of this analysis was to determine what kind of change arose during this period and what might be the reasons behind it. Secondly, wind energy data was examined. The aim of this analysis was to check wind speed in different districts in Istanbul and decide which locations are appropriate for wind turbines. Also, to see whether there are existing wind turbines on those locations or not. Lastly, solar energy production data was analyzed. The objective of this analysis was to observe the fluctuation of electricity generation and to check if the reasons are seasonal change, temperature change, or weather.    
 
 
 # Description of Data
-Solar energy is an essential source of ecological energy. There are many solar powerplants all around the Turkey. In this report we have examined the dataset of Ikitelli Solar Power Electricty Plant and it's power production capacities. It is mostly related with energy and environment aspect of Istanbul. 
+ All data was obtained from Metropolitan Municipality of Istanbul(IBB). Natural gas data contained consumption by districts from 2015 to 2019. The variables are the amount of natural gas usage for 39 districts, population of these districts and years. The natural gas consumption data was published by IGDAS in 01.01.2020. The unit of consumption is m^3/ year. (Natural Gas Data)
+ 
+For the wind energy analysis and the natural gas consumption patterns analysis, we also gather meteorological data, which is provided by AKOM. This data includes meteorological readings in different observation stations with a given observation date. Meteorological data include temperature, wind speed, wind direction, humidity, pressure, rainfall, and apparent temperature. This data also provides latitude and longitude information of the weather stations, which is valuable in composing maps. (AKOM Data)
 
-The Graph includes 15-minute data per day of 1200 kWp solar power plant located in the Istanbul Water and Sewerage Administration (ISKI) Ikitelli Drinking Water Treatment Plant. Publisher of the data is Istanbul Energy Inc. The data collection interval is between June 2018 and May 2019. It doesn't include geographical information. Data is collected, edited and listed monthly but since the publisher didn't share each month, there are some missing months along collection interval. All the data used to create graphs are based on real-time data. Unit of electricity generated is kWh/min (y-axis). 
+Solar energy is an essential source of green energy. There are many solar powerplants all around Turkey. The dataset of Ikitelli Solar Power Electricity Plant and its power production capacities are examined. It is mostly related to the energy and environmental aspect of Istanbul. 
+The graph includes 15-minute data per day of 1200 kWp solar power plant located in the Istanbul Water and Sewerage Administration (ISKI) Ikitelli Drinking Water Treatment Plant. The publisher of the data is Istanbul Energy Inc. The data collection interval was between June 2018 and May 2019. It doesn’t include geographical information. Data was collected, edited, and listed monthly, but since the publisher didn’t share each month, there are some missing months along with the collection interval. All the data used to create graphs are based on real-time data. The unit of electricity generated is kWh/min (y-axis). (Solar Energy Data)
 
-Access to data is provided by Metropolitan Municipality of Istanbul(IBB). You can reach the data from following link: data.ibb.gov.tr/dataset/ikitelli-gunes-enerjisi-santrali-elektrik-uretim-miktarlari
+
+
+
 
 # Literature Review
+
+The IBB Açık Veri Portalı, which we utilized in our analysis, is a relatively new website. It was open to access on 19 January 2020, according to @acilis. It was interpreted in media as a step towards transparency in management of the municipality. Because of the recency of the portal, it is not possible to find academic journals that give reference to this portal. But there are individual utilizations of the data since it is published.
+
+There was a great interest in this portal since it is published. To use Apis, people explain for various platforms.@usagepython describes data retrieval techniques using Python. This data becomes the topic of competition, IBB Hackathon. @yarisma gives the news about IBB hackathon, which is held by the Deep Learning Turkey Group.
+
+In @kackisiyiz, they give the news of the opening of the IBB Data website, and it provides visualizations of the natural gas consumption per person analysis of Istanbul. @trafik gives detailed analysis of the İstanbul traffic information in IBB dataset. According to their findings, the traffic in İstanbul gets worse towards weekends; November and December has bad traffic. @mekansal studies the IETT bus and bus station data and gives a usefıul application in the [**Mekansal App.**](https://mekansal.herokuapp.com)
 
 # Descriptive Statistics, Data visualizations, Statistical Analysis, Modeling
 
@@ -62,8 +76,9 @@ Access to data is provided by Metropolitan Municipality of Istanbul(IBB). You ca
 
 Natural gas is an essential component in the energy expenditure of Turkey. It is mostly imported from countries like Russia, İran, and Azerbaijan. Then its distribution is done by private companies. In İstanbul, the private company responsible for natural gas distribution is IGDAŞ. It requires infrastructure investments; its delivery is done by underground pipelines. 
 
-Consumption of Natural gas in İstanbul fluctuates according to seasons. Most of the heating is done with Natural Gas; in the cold winter months, its consumption peaks. When the winter is more chill, natural gas consumption changes according to years. Also, the population of İstanbul is increasing, which contributes to an increase in general consumption patterns.
-```{r doalgaz,echo=F,warning=FALSE,message=FALSE}
+Consumption of Natural gas in İstanbul fluctuates according to seasons. Most of the heating is done with Natural Gas; in the cold winter months, its consumption peaks. When the winter is more chill, natural gas consumption changes according to years. Also, the population of İstanbul is increasing, which contributes to an increase in general consumption patterns.  This graph is generated with Natural Gas Data. The animated version of the chart can be viewed in this [**link**](https://rpubs.com/aileia/istdoggaz)
+
+```{r doalgaz,echo=F,warning=FALSE,message=FALSE, fig.align="center", fig.cap= "The consumption of natural gas for provinces based on year"}
 doalgaztuk <- read_excel('doalgaztuk.xlsx')
   f1 <- list(size = 8)
   doalgaztuk%>%
@@ -77,17 +92,17 @@ doalgaztuk <- read_excel('doalgaztuk.xlsx')
   )%>%
   layout(
     title = "Natural Gas Consumption",
-    xaxis = list(title = "Provinces",
+    xaxis = list(title = "Districts",
                  tickfont = f1),legend=list(title=list(text='<b> Years </b>'))
   ) 
 ```
 
- We make a graph of consumption of different provinces according to years in order to locate which provinces require more investment in underground pipelines. In our data, we see that Kadıköy’s consumption increases much more than other provinces. This is partly explained by the urban transformation projects that take place in Kadıköy. In these projects, lots of new residential buildings are constructed, unlike old buildings, in these buildings, the heating,  water heating,  cooking is all done with natural gas. This might explain the spike in natural consumption in Istanbul. It also means they require more investment in infrastructure for natural gas in Kadıköy.
+ We make a graph of consumption of different districts according to years to locate which districts require more investment in underground pipelines. In our data, we see that Kadıköy’s consumption increases much more than other districts. This is partly explained by the urban transformation projects that take place in Kadıköy. In these projects, lots of new residential buildings are constructed, unlike old buildings, in these buildings, the heating,  water heating,  cooking is all done with natural gas. This might explain the spike in natural consumption in Istanbul. It also means they require more investment in infrastructure for natural gas in Kadıköy.
 
-Our graph also enlights that 2017 the natural gas consumption in every providence increased. When we try to explain this phenomenon, we look at the winter mean temperatures according to years. As it is seen in our graphs, in 2017, the temperatures are lower than the other years, which can explain the increase.
+Our graph also enlightens that 2017 the natural gas consumption in every providence increased. When we try to explain this phenomenon, we look at the winter mean temperatures according to years. As it is seen in our graphs, in 2017, the temperatures are lower than the other years, which can explain the increase. This graph is generated with Akom Data. 
 
 
-```{r wintermeantemps,echo=F,warning=FALSE,message=FALSE}
+```{r wintermeantemps,echo=F,warning=FALSE,message=FALSE, fig.align="center", fig.cap= "The mean winter temperatures in İstanbul according to years"}
  aksaraymet <- read_excel('otomatik-meteorolojik-gozlem-istasyon-verileri-akom (1).xlsx',3)
  aksaraymet$Ort_Hava_S<-as.double(aksaraymet$Ort_Hava_S)
  
@@ -115,10 +130,88 @@ aksaraymet %>% left_join(translatemonth)%>%
                  tickfont = f1)
   )
 ```
-This animation shows the change of pouplation vs natural gas consumption by province during 5 years.
+
+## To do more detailed statistical research on natural gas consumption, boxplot was drawn for each province to visualize and ANOVA was applied to see whether there is a difference between means.
 
 ```{r echo=F,warning=FALSE,message=FALSE}
 data1 <- read_csv("data1.csv")
+ggplot(data1, aes(x=province, y=consumption, color = province)) + 
+  geom_boxplot(outlier.colour="red", outlier.shape=8,
+               outlier.size=4) + scale_x_discrete(guide = guide_axis(check.overlap = TRUE))
+prop.aov <- aov(consumption ~ province, data = data1)
+summary(prop.aov)
+
+```
+ 
+ Boxplot, which displays the 5 number summary of natural gas consumption by province, shows how Kadikoy makes a huge difference. It has the highest variation together with high min, max, Q1, Q2, and Q3. Adalar has the lowest natural gas consumption. The median values of all provinces lie between 10^8 and 2*10^8. To see whether their mean is significantly different or not, ANOVA was applied. From the summary, it is possible to see that the p-value << 0.05. Therefore, there is a significant difference in natural gas consumption between provinces. Furthermore, to eliminate the effect of population on natural gas consumption, the ratio of consumption to population was tested. (Red stars represent outliers)
+ 
+```{r echo=F,warning=FALSE,message=FALSE}
+data4 <- mutate(data1, proportion = consumption / population)
+
+ggplot(data4, aes(x=province, y=proportion, color = province)) + 
+  geom_boxplot(outlier.colour="red", outlier.shape=8,
+               outlier.size=4) + scale_x_discrete(guide = guide_axis(check.overlap = TRUE))
+
+prop.aov2 <- aov(proportion ~ province, data = data4)
+summary(prop.aov2)
+```
+
+ This boxplot illustrates a 5 number summary of the ratio between consumption and population. It can be seen that Adalar makes colossal variation among provinces. It means that natural gas consumption in Adalar for five years varied strictly. It has the highest median; therefore, there is less population with high consumption of natural gas. Moreover, the least deviation and the lowest ratio is seen in Catalca. So, in Catalca there more people using less natural gas. Almost all districts ratios varied between 250 to 1000. To see whether provinces’ ratio mean are significantly different or not, ANOVA was applied. From the summary, it is possible to see that the p-value <<< 0.05. Thus, there statistically significant difference between the ratio means of provinces. (Red stars represent outliers)   
+
+
+##  In addition, the normality of residuals was checked by using the Q-Q plot.
+
+```{r echo=F,warning=FALSE,message=FALSE}
+plot(prop.aov, 2)
+
+plot(prop.aov2, 2)
+```
+
+ Here, both Q-Q plot, consumption ~ province, and the ratio of consumption to population ~ district, show that approximately all points fall along the reference line. Thus, we can assume normality for both. 
+ 
+
+### Simple linear regression between population and natural gas consumption (Model 1)
+
+```{r echo=F,warning=FALSE,message=FALSE}
+
+ggplot(data1, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
+  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by districts")
+
+```
+
+### Simple linear regression between population and natural gas consumption without outlier(Model 2)
+
+```{r echo=F,warning=FALSE,message=FALSE}
+
+
+data2 <- sqldf("select * from data1 where province != 'KADIKÖY'")
+ggplot(data2, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
+  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by regions")
+
+```
+
+---
+output:
+  bookdown::word_document2: default
+---
+ 
+Table: Summary table of both regression models and their correlations
+
+
+|       | $\beta^0$     |$\beta^1$      |    correlation  |
+|-------|---------------|:-------------:|----------------:|
+|Model 1|   38484980.5  |    298.5      |    0.7727       |
+|Model 2| 37462148.2    | 288.6         |   0.8369        |
+
+
+
+The linear model for data without an outlier is estimated as ŷ =  37462148.2 + 288.6x. This implies that, on average, for every one person increase in population, natural gas consumption is estimated to increase by 288.6 m³ /year. Regression coefficients for data with outliers give higher results. This is because in Kadikoy there is more consumption of natural gas than average. The correlation coefficient of data with the outlier was less (0.77) than without (0.84). This change means that the correlation of population and natural gas consumption from data with outlier is weaker or more spread than others. Thus, there are effects of the outlier to the model, and a simple regression model without outlier gives more reliable estimations on natural gas consumption among regions in Istanbul. 
+
+
+### This animation demonstrates the change of population vs. natural gas consumption by the district for five years.
+
+```{r echo=F,warning=FALSE,message=FALSE}
+
 visualization <- data1 %>%
   plot_ly(
     x = ~ population, 
@@ -141,80 +234,38 @@ visualization
 
 ```
 
-
-
-### Simple linear regression between population and natural gas consumption (m3)(Model 1)
-
-```{r echo=F,warning=FALSE,message=FALSE}
-
-ggplot(data1, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
-  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by regions")
-
-```
-
-### Simple linear regression between population and natural gas consumption (m3) without outlier(MOdel 2)
-
-```{r echo=F,warning=FALSE,message=FALSE}
-data1 <- read_csv("data1.csv")
-
-data2 <- sqldf("select * from data1 where province != 'KADIKÖY'")
-ggplot(data2, aes(population, consumption, province)) + geom_point(aes(color = province), size = 3) + 
-  geom_smooth(method = "lm", se = FALSE) + ggtitle("Natural gas consumtion vs population by regions")
-
-```
-
-### Summary table of both regression models and their correlation
-
-
-
-|       | $\beta^0$     |$\beta^1$      |    correlation  |
-|-------|---------------|:-------------:|----------------:|
-|Model 1|   38484980.5  |    298.5      |    0.7727       |
-|Model 2| 37462148.2    | 288.6         |   0.8369        |
-
-
-
-The linear model for data without an outlier is estimated as ŷ =  37462148.2 + 288.6x. This implies that on average, for every 1 person increase in population, natural gas consumption is estimated to increase by 288.6 m³ /year. Regression coefficients for data with outlier gives higher results. This is because in Kadikoy there are more consumption of natural gas than average. Correlation coefficient of data with oulier was less (0.77) than without (0.84). This change means that correlation of population and natural gas consumption from data with outlier is weaker or more spreaded than other. Thus, there are effects of outlier to the model and simple regression model without outlier gives more reliable estimations on natural gas consumption among regions in Istanbul. 
-
+***
 
 ## Wind Energy
-The wind is another energy resource that is used in electricity production. According to the Yeşil Ekonomi website by @YesilEkon, in 2019, 7.42% of all Turkey’s electricity production is supplied by wind energy. Wind energy stations and tribunes are constructed by private firms. Most of the firms are international companies that have local factories. The investments are made by various firms. The table below gives the list of the wind energy stations that are located in İstanbul, which is taken from the Enerji atlası website by @EnerAtl.
+The wind is another energy resource that is used in electricity production. According to the Yeşil Ekonomi website by @YesilEkon, in 2019, 7.42% of all Turkey’s electricity production is supplied by wind energy. Wind energy stations and tribunes are constructed by private firms. Most of the firms are international companies that have local factories. The investments are made by various firms. The table below gives the list of the wind energy stations that are located in İstanbul, which is taken from the Enerji Atlası Website by @EnerAtl.
 
+---
+output:
+  bookdown::word_document2: default
+---
+ 
+Table: The wind stations in İstanbul Region.
 
+|Station                                    |Location                |Company                |Power   |
+|:------------------------------------------|:-----------------------|:----------------------|:-------|
+|Çatalca Rüzgar Santrali                    |İstanbul, Çatalca       |Sanko Enerji           |93 MW   |
+|Silivri Rüzgar Santrali                    |İstanbul, Üsküdar       |Eksim Enerji           |45 MW   |
+|Çanta Rüzgar Santrali                      |İstanbul, Silivri       |Boydak Enerji          |43 MW   |
+|Kemerburgaz RES                            |İstanbul, Gaziosmanpaşa |Alto Holding           |24 MW   |
+|Çataltepe RES                              |İstanbul, Çatalca       |Süper Elektrik Üretim  |10 MW   |
+|Tepe Rüzgar Santrali                       |İstanbul, Silivri       |Teperes Elektrik       |5,85 MW |
+|Gazi RES                                   |İstanbul, Silivri       |Arı En Elektrik Üretim |5,00 MW |
+|Sakarbayır RES                             |İstanbul, Silivri       |Arı En Elektrik Üretim |3,00 MW |
+|Sunjüt Rüzgar Santrali                     |İstanbul, Çatalca       |Sunjüt Enerji          |1,20 MW |
+|Boğaziçi Üni Sarıtepe Kamp Rüzgar Santrali |İstanbul, Sarıyer       |Boğaziçi Üniversitesi  |0,90 MW |
+|Ayyıldız Enerji RES                        |İstanbul, Büyükçekmece  |Ayyıldız Enerji        |0,50 MW |
+In order to locate the most viable locations for wind energy tribunes, we look at the wind speed map of İstanbul. The map is created with the Leaflet package with met000.xls data. In the map below, we see that certain locations have higher wind speeds, especially the regions Çatalca, Silivri, and Adalar has higher wind speeds. As we have observed in the locations of the wind stations, these stations are mostly located in Çatalca and Silivri. Probably because of the estate prices in Adalar, they don’t have wind stations there.The map is produced with AKOM Data. The animated version of the map can viewed in this [**link**](https://rpubs.com/aileia/windspeed)
 
-$$
-\begin{tabular}{l|l|l|l}
-\hline
-Station & Location & Company & Power\\
-\hline
-Çatalca Rüzgar Santrali & İstanbul, Çatalca & Sanko Enerji & 93 MW\\
-\hline
-Silivri Rüzgar Santrali & İstanbul, Üsküdar & Eksim Enerji & 45 MW\\
-\hline
-Çanta Rüzgar Santrali & İstanbul, Silivri & Boydak Enerji & 43 MW\\
-\hline
-Kemerburgaz RES & İstanbul, Gaziosmanpaşa & Alto Holding & 24 MW\\
-\hline
-Çataltepe RES & İstanbul, Çatalca & Süper Elektrik Üretim & 10 MW\\
-\hline
-Tepe Rüzgar Santrali & İstanbul, Silivri & Teperes Elektrik & 5,85 MW\\
-\hline
-Gazi RES & İstanbul, Silivri & Arı En Elektrik Üretim & 5,00 MW\\
-\hline
-Sakarbayır RES & İstanbul, Silivri & Arı En Elektrik Üretim & 3,00 MW\\
-\hline
-Sunjüt Rüzgar Santrali & İstanbul, Çatalca & Sunjüt Enerji & 1,20 MW\\
-\hline
-Boğaziçi Üni. Sarıtepe Kamp. Rüzgar Santrali & İstanbul, Sarıyer & Boğaziçi Üniversitesi & 0,90 MW\\
-\hline
-Ayyıldız Enerji RES & İstanbul, Büyükçekmece & Ayyıldız Enerji & 0,50 MW\\
-\hline
-\end{tabular}
-$$
-In order to locate the most viable locations for wind energy tribunes, we look at the wind speed map of İstanbul. The map is created with the Leaflet package with met000.xls data. In the map below, we see that certain locations have higher wind speeds, especially the regions Çatalca, Silivri, and Adalar has higher wind speeds. As we have observed in the locations of the wind stations, these stations are mostly located in Çatalca and Silivri. Probably because of the estate prices in Adalar, they don’t have wind stations there.
 ![Map of max windspeed in march 2019](mapwindspeed.png)
 
-```{r echo=F,warning=FALSE,message=FALSE}
+Another factor affecting the wind turbine efficiency is the humidity levels, as studied in @danook2019impact. According to this article, humidity decreases the efficiency of wind energy generation. The humidity levels supplied from Akom Data is used to generate humidity levels in İstanbul. This data shows humidity in İstanbul is high, which decreases efficiency. But due to considerable expenditures of energy in İstanbul, and proximity to areas, the construction of wind turbines is still a viable alternative. It is produced with AKOM Data.
+
+```{r echo=F,warning=FALSE,message=FALSE, fig.align="center", fig.cap= "Humidity readings in İstanbul"}
 met000 <- read_csv('met000.csv')
 met000%>%
   group_by(OBSERVING_DATE)%>%
@@ -226,6 +277,8 @@ met000%>%
   labs(title="Average Humidity in İstanbul",caption="Average Humidity in İstanbul during March 2019")+xlab("Date")+ylab("% humidity")
 
 ``` 
+
+***
 
 ## Solar Energy
 
@@ -513,13 +566,13 @@ haziran <- haziran +
 ```
 
 
-The main question for Solar Energy and its production performance is whether there is a relation with seasons, weather and production capacity, and what may affect the production of solar power. As we can see from the graphics, there has always been a fluctuation in the electricity generation during months. So, our aim is to check those changes with the help of statistical tools and data visualization.
+The main question for Solar Energy and its production performance is whether there is a relation with seasons, weather, and production capacity, and what may affect the production of solar power. As we can see from the graphics, there has always been a fluctuation in the electricity generation during months. So, our aim is to check those changes with the help of statistical tools and data visualization.
 
 
 In order to facilitate the analysis process, we will consider this 9-month dataset three-by-three.
 
 
-At the below, there will be some graphs showing energy production in the Ikitelli Solar Powerplant along with March 2019, April 2019 and May 2019. Y-axis shows the amount of energy produced and x-axis shows the date during the month. Each purple spike in the graphics represents days during months. From the legend placed at the right of every graph, you can see the color gradient and its meaning. As the color of purple becomes darker, it means higher electricity generated, and as it becomes closer to the white, it means less productive at that moment. There are some gaps between spikes. This is because, in the early morning, evening and night time is not possible to generate any electricity in solar powerplant.
+At the below, there will be some graphs showing energy production in the Ikitelli Solar Powerplant along with March 2019, April 2019 and May 2019. Y-axis shows the amount of energy produced, and the x-axis shows the date during the month. Each purple spike in the graphics represents days during months. From the legend placed at the right of every graph, you can see the color gradient and its meaning. As the color of purple becomes darker, it means higher electricity generated, and as it becomes closer to the white, it means less productive at that moment. There are some gaps between spikes. This is because, in the early morning, evening, and night time is not possible to generate any electricity in solar powerplant.
 
 
 ```{r codesa21, include=TRUE,echo=FALSE, warning=FALSE, fig.height=13, fig.width=15, fig.align="center", fig.cap= "Ikitelli Solar Power Plant Electricty  Generation Data (March, April and May 2019)"  }
@@ -531,9 +584,9 @@ grid.arrange(mart, nisan, mayis, nrow= 3, ncol = 1 )
 
 ```
 
-When we check the graphs, we can see that in the March 2019 around on 13-14-15 March there are some problems with electricity generation. The reason might be bad weather. When we check the meteorology data, it says on that day, Istanbul is very cloudy with heavy rain in the morning and afternoon. @hava1
+When we check the graphs, we can see that in March 2019 around on 13-14-15 March there are some problems with electricity generation. The reason might be bad weather. When we check the meteorology data, it says on that day, Istanbul is very cloudy with heavy rain in the morning and afternoon. @hava1
 
-Also, when we look at the descriptive statistics of the three months period, we can clearly see an increase in the mean of the production below. The mid-value of the month, in other words, the median, is also increasing from March to May. So, we can say that as the temperatures go up by seasonal change, the production capacity of solar power plants grows.
+Also, when we look at the descriptive statistics of the three months, we can clearly see an increase in the mean of the production below. The mid-value of the month, in other words, the median, is also increasing from March to May. So, we can say that as the temperatures go up by seasonal change, the production capacity of solar power plants grows.
 
 ---
 output:
@@ -553,24 +606,6 @@ Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar 
 
 
 
-```{r codesa22, include=FALSE,echo=FALSE, warning=FALSE, }
-# MARCH 2019 descriptive data
-summary(ff1223$kwh)
-```
-
-```{r codesa23, include=FALSE,echo=FALSE, warning=FALSE, }
-# APRIL 2019 descriptive data
-summary(ff1222$kwh)
-```
-
-```{r codesa24, include=FALSE,echo=FALSE, warning=FALSE, }
-# MAY 2019 descriptive data
-summary(ff1221$kwh)
-```
-
-
-
-
 ***
 
 
@@ -584,7 +619,7 @@ grid.arrange(kasim, aralik, subat, nrow= 3, ncol = 1 )
 ```
 
 
-In the next 3-pack of graphs, we have November 2018, December 2018 and February 2019 dated data. Different than our previous set, we see way more less intensity of electricity generation. To prove that comparison, firstly, we check descriptive statistical elements of those 3-month data. As we can see below, median values are so close to zero, or even zero. The reason is most of the data is close to minimum values. If we check the December 2019 data, we can see only two values higher than 175 (kWh/min). That was almost every day higher than this value on summer/spring dataset. Moreover, when we check the mean values of these three months, there are dramatic differences compared to March, April, and May. So, we can say that effect of season and temperature is obvious on generation.
+In the next 3-pack of graphs, we have November 2018, December 2018 and February 2019 dated data. Different than our previous set, we see way less intensity of electricity generation. To prove that comparison, firstly, we check descriptive statistical elements of those 3-month data. As we can see below, median values are so close to zero, or even zero. The reason is most of the data is close to minimum values. If we check the December 2019 data, we can see only two values higher than 175 (kWh/min). That was almost every day higher than this value on the summer/spring dataset. Moreover, when we check the mean values of these three months, there are dramatic differences compared to March, April, and May. So, we can say that effect of season and temperature is obvious on generation.
 
 
 ---
@@ -602,24 +637,6 @@ Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar 
 
 
 
-
-```{r codesa26, include=FALSE,echo=FALSE, warning=FALSE, }
-# FEBRUARY 2019 descriptive data
-summary(ff1224$kwh)
-```
-
-```{r codesa27, include=FALSE,echo=FALSE, warning=FALSE, }
-# DECEMBER 2018 descriptive data
-summary(ff1225$kwh)
-```
-
-```{r codesa28, include=FALSE,echo=FALSE, warning=FALSE, }
-# NOVEMBER 2018 descriptive data
-summary(ff1226$kwh)
-```
-
-
-
 ```{r codesa29, include=TRUE, echo=FALSE, warning=FALSE, fig.height=13, fig.width=15, fig.align="center", fig.cap= "Ikitelli Solar Power Plant Electricty  Generation Data (June, August and September 2018)" }
 
 library(gridExtra)
@@ -629,9 +646,9 @@ grid.arrange(haziran, agustos, eylul, nrow= 3, ncol = 1 )
 
 ```
 
-To confirm and double-check the effect of weather and season, let's have a look at to last three month data set. It includes June 2018, August 2018 and September 2018 data. Because it is not winter or fall season, we see a continuous energy generation on the graphs except the end of September 2018. That confirms that season has a prominent effect on the generation. On the June 2018 data, we see similar electricity generation data with first three graph sets (2019 March, April and May). Even we have a higher mean of production (92.68 kWh/min) than those three months. That was an expected result, so we know that sunny times have a positive effect on solar energy generation. But when we come to August, it looks like there is a problem. Even though the consistency of data continues in August, we should have a higher mean, in other words more electricty generation. 
+To confirm and double-check the effect of weather and season, let’s have a look at to last three month data set. It includes June 2018, August 2018, and September 2018 data. Because it is not winter or fall season, we see a continuous energy generation on the graphs except the end of September 2018. That confirms that season has a prominent effect on the generation. On the June 2018 data, we see similar electricity generation data with the first three graph sets (2019 March, April, and May). Even we have a higher mean of production (92.68 kWh/min) than those three months. That was an expected result, so we know that sunny times have a positive effect on solar energy generation. But when we come to August, it looks like there is a problem. Even though the consistency of data continues in August, we should have a higher mean, in other words, more electricity generation. 
 
-We understood it is also something expected after a quick research about solar panels. The effect of temperature is different than the season; the less is better. But less temperature means less sun (less solar radiation), so there should be a balance. According to research, at 25°C, the performance of solar panels decreases around $%10-25$ @solarpanel. When we checked the air temperature in August 2018, it shows almost every day around 25°C @hava . This explains the situation. Lastly, sometimes there exist outlier data in a dataset; for instance, we can see it on the graphical model in August 2018, or we can check the max generation value of it.
+We understood it is also something expected after quick research about solar panels. The effect of temperature is different than the season; the less is better. But less temperature means less sun (less solar radiation), so there should be a balance. According to research, at 25°C, the performance of solar panels decreases around $%10-25$ @solarpanel. When we checked the air temperature in August 2018, it shows almost every day around 25°C @hava. This explains the situation. Lastly, sometimes there exist outlier data in a dataset; for instance, we can see it on the graphical model in August 2018, or we can check the max generation value of it.
 
 
 ---
@@ -651,22 +668,16 @@ Table: Descriptive Statistics Table of Electricity Generation in Ikitelli Solar 
 
 
 ## Conclusion
-As a result, we observed different graphics of different months and their solar electricity generation data above. We have checked the effect of weather, season, and temperature. We saw that any weather (cloudy, rainy, snowy etc.) except sunny affects adversely and decreases electricity generation's performance. Also, we learned high temperature is also something unwanted for solar panels. It reduces performance, as well. The season is relatively affecting the production. Because, generally in Istanbul, springs and summers are sunny and not so hot, but winters and falls are rainy/snowy and cloudy mostly. Since those are the main factors affecting solar electricity generation, the season is of great importance.
 
-```{r codesa30, include=FALSE,echo=FALSE, warning=FALSE, }
-# JUNE 2018 descriptive data
-summary(ff1229$kwh)
-```
+ In conclusion, energy types in Istanbul, such as natural gas, wind, and solar energy, was overviewed from different aspects. Descriptive statistics, data visualizations, statistical analysis, and modeling was applied to data.
+ 
+ In the case of natural gas, the change of natural gas consumption was plotted as the time changes, and it was found that consumption was high in 2017. The reason behind it was the yearly fluctuations of mean temperatures in winter. It can be seen from the winter mean temperature graph. On average, the temperature in 2017 was nearly 4.5 °C. To do deeper research, further statistical analysis was performed. From the boxplot of consumption by provinces, it was found that Kadikoy was exceptionally different from other districts. Kadikoy had higher consumption in terms of all quartiles. The lowest utilization of natural gas was seen in Catalca. With the help of the ANOVA test, it was found that the mean of natural gas usage was different by provinces. So, there can be some problems in pipes, human behavior towards consumption, or the amount of population. Thus, to get rid of the population effect proportion of consumption to population was further examined. From the boxplot, it was found that Adalar had enormous variation. In other words, there is more natural gas usage per capita in Adalar, and it increased by time greatly even if the population is less. The same variation can be seen in Sile, but it is not huge. The cause of this change may be high touristic activity. Again Catalca had the lowest ratio. It means that there more people who are registered but less natural gas consumption per capita. In addition, the normality test was performed to see whether consumption and consumption per capita are normally distributed or not. Both were approximately normally distributed, which helped us to be sure of the validity of the analysis. Furthermore, simple linear regression was constructed for two cases: population ~ natural gas utilization with and without the outlier. It was already found that Kadikoy was extreme, and it was checked with a scatter plot. With these two models, it was possible to see how the outlier affects the model and correlation. Also, animation can be played just for aesthetics. It shows how natural gas usage vs. population change by year.    
 
-```{r codesa31, include=FALSE,echo=FALSE, warning=FALSE, }
-# AUGUST 2018 descriptive data
-summary(ff1228$kwh)
-```
+Wind Energy is an important element in energy production. Our analysis shows although there are adversities such as high humidity, in certain locations like Çatalca, Sarıyer, and Adalar, the wind regime is enough to support wind turbines. Since due to proximity to high electricity consumption, in İstanbul we have wind energy stations. Çatalca is generally elected for current wind energy stations.  
 
-```{r codesa32, include=FALSE,echo=FALSE, warning=FALSE, }
-# SEPTEMBER 2019 descriptive data
-summary(ff1227$kwh)
-```
+Moreover, different graphics of different months and their solar electricity generation data was observed above. The effect of weather, season, and temperature was checked. We saw that any weather (cloudy, rainy, snowy, etc.) except sunny affects adversely and decreases electricity generation’s performance. Also, we learned high temperature is something unwanted for solar panels. It reduces performance, as well. The season is relatively affecting the production. Because, generally in Istanbul, springs and summers are sunny and not so hot, but winters and falls are rainy/snowy and cloudy mostly. Since those are the main factors affecting solar electricity generation, the season is of great importance.
+
+
 
 ***
 
